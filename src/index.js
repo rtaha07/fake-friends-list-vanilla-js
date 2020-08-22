@@ -1,15 +1,16 @@
-import React from 'react'
-import ReactDOM from 'react-dom'
-import axios from 'axios'
+import React from 'react';
+import ReactDOM from 'react-dom';
+import axios from 'axios';
 
 class Main extends React.Component {
   constructor() {
-    super()
+    super();
     this.state = {
-      friends: []// [{id: 1, name: 'Rehab', rating:5}, {id: 2, name: 'Adam', rating:1}]
-    }
-    this.create = this.create.bind(this)
-    this.destroy = this.destroy.bind(this)
+      friends: [], // [{id: 1, name: 'Rehab', rating:5}, {id: 2, name: 'Adam', rating:1}]
+    };
+    this.create = this.create.bind(this);
+    this.destroy = this.destroy.bind(this);
+    this.addFriend = this.addFriend.bind(this);
   }
 
   render() {
@@ -17,75 +18,121 @@ class Main extends React.Component {
     return (
       <div>
         <h1>Friends (The List)</h1>
-      <form>
-        <button onClick={ this.create }>Create</button>
-      </form>
-      <div id='error'></div>
-      <ul>
-        <FriendList friends={this.state.friends} destroy={this.destroy}/>
-      </ul>
-    </div>
-    )
+        <form>
+          <button onClick={this.create}>Create</button>
+        </form>
+        <div id="error"></div>
+        <ul>
+          <FriendList
+            friends={this.state.friends}
+            destroy={this.destroy}
+            addFriend={this.addFriend}
+          />
+        </ul>
+      </div>
+    );
   }
 
   async create() {
-    const friends = this.state.friends
+    const friends = this.state.friends;
     try {
       const response = await axios.post('/api/friends');
-      friends.push(response.data)
+      friends.push(response.data);
       this.setState({ friends });
-    }
-    catch(err) {
-      console.log('ERROR')
+    } catch (err) {
+      console.log('ERROR');
     }
   }
 
   async destroy(friend) {
-    let friends = this.state.friends
+    let friends = this.state.friends;
     try {
       const response = await axios.delete(`/api/friends/${friend.id}`);
-      console.log(response.data)
-      friends = friends.filter(friendA => friendA.id !== friend.id)
+      console.log(response.data);
+      friends = friends.filter((friendA) => friendA.id !== friend.id);
       this.setState({ friends });
+    } catch (err) {
+      console.log('ERROR');
     }
-    catch(err) {
-      console.log('ERROR')
+  }
+
+  async addFriend(friend, direction) {
+    let friends = this.state.friends;
+    console.log(direction);
+    if (direction === '+') {
+      friend.rating++;
+    } else {
+      friend.rating--;
+    }
+    try {
+      const response = await axios.put(`/api/friends/${friend.id}`, {
+        rating: friend.rating,
+      });
+      console.log(response.data);
+      friends = friends.sort((a, b) => (a.rating > b.rating ? -1 : 1));
+      this.setState({ friends });
+    } catch (err) {
+      console.log('ERROR');
     }
   }
 
   async componentDidMount() {
     try {
       const response = await axios.get('/api/friends');
-      this.setState({friends: response.data});
-    }
-    catch(err) {
-      console.log('ERROR')
+      this.setState({ friends: response.data });
+    } catch (err) {
+      console.log('ERROR');
     }
   }
 }
 
-const FriendList = ({ friends, destroy }) => {
-//  console.log(friends)
-  return (
-    friends.map(friend => {
-    return (<Friend friend={friend} key={friend.id} destroy={destroy}/>)
-    })
-  )
-}
+const FriendList = ({ friends, destroy, addFriend }) => {
+  //  console.log(friends)
+  return friends.map((friend) => {
+    return (
+      <Friend
+        friend={friend}
+        key={friend.id}
+        destroy={destroy}
+        addFriend={addFriend}
+      />
+    );
+  });
+};
 
-const Friend = ({ friend, destroy }) => {
+const Friend = ({ friend, destroy, addFriend }) => {
   return (
     <li>
-      <h2>{ friend.name }</h2>
-      <span>{ friend.rating }</span>
-      <button data-id={friend.id}>+</button>
-      <button data-id={friend.id}>-</button>
-      <button onClick={()=> {destroy(friend)} }>x</button>
+      <h2>{friend.name}</h2>
+      <span>{friend.rating}</span>
+      <button
+        onClick={() => {
+          addFriend(friend, '+');
+        }}
+        // data-id={friend.id}
+      >
+        +
+      </button>
+      <button
+        onClick={() => {
+          addFriend(friend, '-');
+        }}
+        //data-id={friend.id}
+      >
+        -
+      </button>
+      <button
+        onClick={() => {
+          destroy(friend);
+        }}
+      >
+        x
+      </button>
     </li>
-  )
-}
+  );
+};
 
-ReactDOM.render(<Main />,document.getElementById('root'))
+ReactDOM.render(<Main />, document.getElementById('root'));
 // const axios = require('axios');
 
 // const render = (friends)=> {
