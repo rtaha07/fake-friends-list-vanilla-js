@@ -1,13 +1,15 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
+import axios from 'axios'
 
 class Main extends React.Component {
   constructor() {
     super()
     this.state = {
-      friends: [{id: 1, name: 'Rehab', rating:5},
-      {id: 2, name: 'Adam', rating:1}]
+      friends: []// [{id: 1, name: 'Rehab', rating:5}, {id: 2, name: 'Adam', rating:1}]
     }
+    this.create = this.create.bind(this)
+    this.destroy = this.destroy.bind(this)
   }
 
   render() {
@@ -16,32 +18,69 @@ class Main extends React.Component {
       <div>
         <h1>Friends (The List)</h1>
       <form>
-        <button>Create</button>
+        <button onClick={ this.create }>Create</button>
       </form>
       <div id='error'></div>
       <ul>
-        <FriendList friends={this.state.friends}/>
+        <FriendList friends={this.state.friends} destroy={this.destroy}/>
       </ul>
     </div>
     )
   }
+
+  async create() {
+    const friends = this.state.friends
+    try {
+      const response = await axios.post('/api/friends');
+      friends.push(response.data)
+      this.setState({ friends });
+    }
+    catch(err) {
+      console.log('ERROR')
+    }
+  }
+
+  async destroy(friend) {
+    let friends = this.state.friends
+    try {
+      const response = await axios.delete(`/api/friends/${friend.id}`);
+      console.log(response.data)
+      friends = friends.filter(friendA => friendA.id !== friend.id)
+      this.setState({ friends });
+    }
+    catch(err) {
+      console.log('ERROR')
+    }
+  }
+
+  async componentDidMount() {
+    try {
+      const response = await axios.get('/api/friends');
+      this.setState({friends: response.data});
+    }
+    catch(err) {
+      console.log('ERROR')
+    }
+  }
 }
 
-const FriendList = ({ friends }) => {
+const FriendList = ({ friends, destroy }) => {
 //  console.log(friends)
   return (
     friends.map(friend => {
-    return (<li><Friend friend={friend}/></li>)
+    return (<Friend friend={friend} key={friend.id} destroy={destroy}/>)
     })
   )
 }
 
-const Friend = ({ friend }) => {
+const Friend = ({ friend, destroy }) => {
   return (
     <li>
       <h2>{ friend.name }</h2>
       <span>{ friend.rating }</span>
-      <button data-id={friend.id}>+</button><button data-id={friend.id}>-</button><button data-id={friend.id}>x</button>
+      <button data-id={friend.id}>+</button>
+      <button data-id={friend.id}>-</button>
+      <button onClick={()=> {destroy(friend)} }>x</button>
     </li>
   )
 }
